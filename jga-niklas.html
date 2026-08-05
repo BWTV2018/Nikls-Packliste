@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JGA Niklas Packliste</title>
+<style>
+/* Hintergrundbild: sobald dein Foto fertig ist, einfach als "background.jpg" in denselben
+   Ordner wie diese Datei legen (z.B. neben index.html auf GitHub Pages) - fertig.
+   Ist keine Datei vorhanden, wird automatisch der Farbverlauf als Fallback angezeigt.
+   Die halbtransparente Farbschicht liegt zur besseren Lesbarkeit über dem Foto -
+   Deckkraft (.75) kannst du hier nach Wunsch anpassen. */
+body{font-family:Arial,sans-serif;margin:0;overflow-x:hidden;
+  background-image:linear-gradient(rgba(180,216,255,.75),rgba(230,242,255,.75)),url('background.jpg');
+  background-size:cover;background-position:center;background-attachment:fixed;
+  background-color:#b4d8ff}
+header{padding:24px;text-align:center}.card{background:#fff;margin:16px;border-radius:16px;padding:16px;box-shadow:0 4px 12px #0002}
+details summary{font-size:1.2em;font-weight:bold;cursor:pointer}
+label{display:block;margin:8px 20px}.note{font-size:.9em;color:#666;font-style:italic;margin-left:20px;margin-right:20px}
+progress{width:100%;height:22px}#ach{position:fixed;right:20px;bottom:20px;background:#fff;padding:10px 14px;border-radius:12px;display:none;box-shadow:0 3px 10px #0003}
+#final{display:none;position:fixed;inset:0;background:#0008;color:#fff;align-items:center;justify-content:center;flex-direction:column;z-index:50}
+#glassSvg{width:160px;height:auto}
+#liquid,#foam{transition:y 2.5s ease-out, height 2.5s ease-out, opacity 2.5s ease-out}
+button{padding:12px 20px;border:none;border-radius:10px;cursor:pointer}
+.confetti{position:fixed;top:-10px;pointer-events:none;z-index:60}
+@keyframes confettiFall{to{transform:translateY(110vh) rotate(360deg);opacity:.2}}
+#warn{display:none;margin:16px;padding:12px 16px;background:#fff3cd;border-radius:12px;font-size:.9em;color:#7a5c00}
+#confirmBox{display:none;position:fixed;inset:0;background:#0006;align-items:center;justify-content:center;flex-direction:column;z-index:70}
+#confirmBox .box{background:#fff;padding:24px;border-radius:16px;max-width:260px;text-align:center;color:#333}
+#confirmBox p{margin:0 0 16px}
+#confirmBox button{margin:0 6px}
+#confirmYes{background:#3fa7ff;color:#fff}
+#confirmNo{background:#eee;color:#333}
+</style></head><body>
+<header><h1>🍻 JGA Niklas</h1><h3>08.08.2026</h3><p>Packliste für ein unvergessliches Wochenende</p></header>
+<div id="warn">⚠️ Dein Fortschritt kann auf diesem Gerät gerade nicht dauerhaft gespeichert werden (z. B. weil die Datei direkt geöffnet statt über einen Link aufgerufen wurde). Die Liste funktioniert trotzdem, aber Häkchen gehen beim Schließen der Seite evtl. verloren.</div>
+<div class="card"><progress id="bar" max="100" value="0"></progress><p id="txt">0%</p><button onclick="resetList()">Neu starten</button></div>
+<div id="list"></div><div id="ach"></div>
+<div id="final">
+  <h1>🍻 Den hast du dir jetzt verdient!</h1>
+  <svg id="glassSvg" viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <clipPath id="mugClip">
+        <rect x="59" y="54" width="82" height="152" rx="8"/>
+      </clipPath>
+    </defs>
+    <!-- Füllung im Krug -->
+    <g clip-path="url(#mugClip)">
+      <rect id="liquid" x="59" y="206" width="82" height="0" fill="#e8a33d"/>
+      <rect id="foam" x="59" y="54" width="82" height="20" fill="#fff" opacity="0"/>
+      <circle class="bubble" cx="80" cy="200" r="2" fill="#fff8" opacity="0">
+        <animate attributeName="cy" values="200;80" dur="2.6s" begin="0.9s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0;.8;0" dur="2.6s" begin="0.9s" repeatCount="indefinite"/>
+      </circle>
+      <circle class="bubble" cx="100" cy="200" r="2.5" fill="#fff9" opacity="0">
+        <animate attributeName="cy" values="200;75" dur="2.2s" begin="1.2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0;.8;0" dur="2.2s" begin="1.2s" repeatCount="indefinite"/>
+      </circle>
+      <circle class="bubble" cx="118" cy="200" r="1.8" fill="#fff8" opacity="0">
+        <animate attributeName="cy" values="200;82" dur="2.9s" begin="1.5s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0;.8;0" dur="2.9s" begin="1.5s" repeatCount="indefinite"/>
+      </circle>
+    </g>
+    <!-- Krugumriss -->
+    <rect x="55" y="50" width="90" height="160" rx="12" fill="none" stroke="#fff" stroke-width="4"/>
+    <path d="M145,80 C182,80 182,172 145,172" fill="none" stroke="#fff" stroke-width="8"/>
+  </svg>
+  <br><button onclick="final.style.display='none'">🍺 Auf zum JGA!</button>
+</div>
+<div id="confirmBox">
+  <div class="box">
+    <p>Wirklich alles zurücksetzen?</p>
+    <button id="confirmYes">Ja, zurücksetzen</button>
+    <button id="confirmNo">Abbrechen</button>
+  </div>
+</div>
+<script>
+window.addEventListener("error",function(e){
+  let b=document.createElement("div");
+  b.style.cssText="position:fixed;top:0;left:0;right:0;background:#ff4d4d;color:#fff;padding:10px;font-size:.85em;z-index:999;text-align:left;white-space:pre-wrap";
+  b.textContent="Fehler beim Laden: "+e.message+" (Zeile "+e.lineno+")";
+  document.body.prepend(b);
+});
+// Sicherer Speicher: nutzt localStorage wenn möglich, sonst einen In-Memory-Fallback,
+// damit die Seite auch dann lädt, wenn localStorage blockiert ist (z.B. beim Öffnen
+// als lokale Datei auf dem iPhone).
+const memoryStore={};
+let storageOK=true;
+try{
+  const testKey="__test__";
+  localStorage.setItem(testKey,"1");
+  localStorage.removeItem(testKey);
+}catch(e){storageOK=false;}
+const safeStorage={
+  getItem(k){try{return storageOK?localStorage.getItem(k):memoryStore[k]??null;}catch(e){return memoryStore[k]??null;}},
+  setItem(k,v){try{if(storageOK){localStorage.setItem(k,v);return;}}catch(e){}memoryStore[k]=v;}
+};
+
+const data={
+"🚿 Badezimmer":[
+["Zahnbürste",""],["Zahnpasta",""],["Deo",""],["Duschgel","12 in 1 präferiert, Shampoo und Duschgel getrennt geht alternativ auch…"],["<s>Sonnencreme</s>","Uns gefällt auch der rote Nikls"],["<s>Parfüm</s>","Bruder, wem willst du noch imponieren?"]],
+"🛏️ Schlafzimmer":[["1-6 Unterhosen","je nach Einscheißhäufigkeit"],["2 Socken","deine Entscheidung ob 2 oder 2 Paar"],["2 Shirts",""],["1 Pulli","man weiß ja nie, vor allem nicht wo's hingeht"],["1 kurze Hose",""],["1 lange Hose",""],["Badehose?","Bruder, ich weiß doch auch nicht"],["Schlafsachen","nackt geht natürlich auch"],["Ohrstöpsel","denk an unseren Holzfäller Ben"]],
+"🎒 Sonstiges (aber nicht weniger wichtig)":[["Perso",""],["Handy",""],["Ladekabel",""],["Sonnenbrille",""],["Ausreichend Geld","was glaubst du wer den Spaß hier später bezahlt?"],["Schuhe","vielleicht n Wechselpaar"],["Nikiletten",""],["Cap",""]]
+};
+const list=document.getElementById("list");
+let total=0;
+
+function slug(str,i){
+  return "item_"+str.replace(/[^a-zA-Z0-9äöüÄÖÜß]+/g,"_")+"_"+i;
+}
+
+for(const c in data){
+  let d=document.createElement("details");d.open=true;
+  let s=document.createElement("summary");s.innerHTML=c;d.appendChild(s);
+  data[c].forEach((it,i)=>{
+    total++;
+    let id=slug(c,i);
+    let l=document.createElement("label");
+    l.innerHTML=`<input type="checkbox" id="${id}"> ${it[0]}`;
+    d.appendChild(l);
+    if(it[1]){let n=document.createElement("div");n.className="note";n.textContent=it[1];d.appendChild(n);}
+    let cb=l.querySelector("input");
+    cb.checked=safeStorage.getItem(id)=="1";
+    cb.onchange=()=>{safeStorage.setItem(id,cb.checked?"1":"0");update();};
+  });
+  list.appendChild(d);
+}
+
+if(!storageOK){document.getElementById("warn").style.display="block";}
+
+// Konfetti nur bei Meilensteinen (25/50/75/100%)
+function confettiBurst(){
+  const colors=["#3fa7ff","#ffd166","#ffffff","#0d3b66","#9ad1ff"];
+  for(let i=0;i<28;i++){
+    let e=document.createElement("div");
+    e.className="confetti";
+    let size=6+Math.random()*6;
+    e.style.left=Math.random()*innerWidth+"px";
+    e.style.width=size+"px";
+    e.style.height=size+"px";
+    e.style.background=colors[Math.floor(Math.random()*colors.length)];
+    e.style.borderRadius=Math.random()<.5?"50%":"2px";
+    let dur=1.4+Math.random()*1.2;
+    e.style.animation=`confettiFall ${dur}s ease-in forwards`;
+    e.style.animationDelay=(Math.random()*.3)+"s";
+    document.body.appendChild(e);
+    setTimeout(()=>e.remove(),(dur+0.5)*1000);
+  }
+}
+
+let shown={};
+function update(){
+  let c=[...document.querySelectorAll("input")].filter(x=>x.checked).length,p=Math.round(c/total*100);
+  bar.value=p;txt.textContent=`${c} von ${total} Dingen gepackt (${p}%)`;
+  [25,50,75,100].forEach(a=>{
+    if(p>=a&&!shown[a]){
+      shown[a]=1;
+      ach.style.display="block";
+      ach.textContent={25:"🥉 25 %",50:"🥈 50 %",75:"🥇 75 %",100:"👑 100 %"}[a];
+      setTimeout(()=>ach.style.display="none",2500);
+      confettiBurst();
+    }
+  });
+  if(c===total){
+    final.style.display="flex";
+    setTimeout(()=>{
+      document.getElementById("liquid").setAttribute("y","70");
+      document.getElementById("liquid").setAttribute("height","136");
+      document.getElementById("foam").style.opacity="1";
+    },200);
+  }
+}
+function resetList(){
+  document.getElementById("confirmBox").style.display="flex";
+}
+document.getElementById("confirmNo").onclick=()=>{document.getElementById("confirmBox").style.display="none";};
+document.getElementById("confirmYes").onclick=()=>{
+  document.querySelectorAll("input").forEach(cb=>{try{localStorage.removeItem(cb.id);}catch(e){}});
+  Object.keys(memoryStore).forEach(k=>delete memoryStore[k]);
+  location.reload();
+};
+update();
+</script></body></html>
